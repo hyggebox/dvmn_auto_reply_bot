@@ -9,22 +9,12 @@ from telegram.ext import (CallbackContext,
                           MessageHandler,
                           Updater)
 
+import vk_api
+from vk_api.longpoll import VkLongPoll, VkEventType
 
 LANGUAGE_CODE = "ru-RU"
 
 
-def start(update: Update, context: CallbackContext):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text="Привет! Я бот")
-
-
-def echo(update: Update, context: CallbackContext):
-    user_msg = update.message.text
-    bots_answer = detect_intent_texts(project_id, session_id,
-                                      user_msg, LANGUAGE_CODE)
-
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text=bots_answer)
 
 
 def detect_intent_texts(project_id, session_id, text, language_code):
@@ -54,20 +44,27 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
 
-    tg_bot_token = env.str('TG_BOT_TOKEN')
+    vk_group_token = env.str('VK_TOKEN')
+
+    vk_session = vk_api.VkApi(token=vk_group_token)
+    longpoll = VkLongPoll(vk_session)
+
+    for event in longpoll.listen():
+        if event.type == VkEventType.MESSAGE_NEW:
+            print('Новое сообщение:')
+            if event.to_me:
+                print('Для меня от: ', event.user_id)
+            else:
+                print('От меня для: ', event.user_id)
+            print('Текст:', event.text)
+
+
     project_id = env.str('PROJECT_ID')
     session_id = env.str('SESSION_ID')
 
-    updater = Updater(token=tg_bot_token, use_context=True)
-    dispatcher = updater.dispatcher
 
-    start_handler = CommandHandler('start', start)
-    echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
 
-    dispatcher.add_handler(start_handler)
-    dispatcher.add_handler(echo_handler)
 
-    updater.start_polling()
 
 
 
