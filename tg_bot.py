@@ -1,16 +1,30 @@
 import logging
 
 from environs import Env
-from google.cloud import dialogflow
-from telegram import Update
+from telegram import Bot, Update
 from telegram.ext import (CallbackContext,
                           CommandHandler,
                           Filters,
                           MessageHandler,
                           Updater)
+from time import sleep
+
+from df_msg_handler import get_reply_msg
 
 
-LANGUAGE_CODE = "ru-RU"
+logger = logging.getLogger("Logger")
+
+
+class TelegramLogsHandler(logging.Handler):
+
+    def __init__(self, tg_bot, chat_id):
+        super().__init__()
+        self.chat_id = chat_id
+        self.tg_bot = tg_bot
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.tg_bot.send_message(chat_id=self.chat_id, text=log_entry)
 
 
 def start(update: Update, context: CallbackContext):
@@ -20,43 +34,25 @@ def start(update: Update, context: CallbackContext):
 
 def echo(update: Update, context: CallbackContext):
     user_msg = update.message.text
-    bots_answer = detect_intent_texts(project_id, session_id,
-                                      user_msg, LANGUAGE_CODE)
+    bots_answer = get_reply_msg(project_id, session_id, user_msg)
 
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=bots_answer)
 
 
-def detect_intent_texts(project_id, session_id, text, language_code):
-    """Returns the result of detect intent with texts as inputs.
-
-    Using the same `session_id` between requests allows continuation
-    of the conversation."""
-    session_client = dialogflow.SessionsClient()
-
-    session = session_client.session_path(project_id, session_id)
-
-    text_input = dialogflow.TextInput(text=text, language_code=language_code)
-    query_input = dialogflow.QueryInput(text=text_input)
-
-    response = session_client.detect_intent(
-        request={"session": session, "query_input": query_input}
-    )
-
-    return response.query_result.fulfillment_text
-
-
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(levelname)s: %(name)s - %(message)s - %(asctime)s',
-        level=logging.INFO)
-
     env = Env()
     env.read_env()
 
     tg_bot_token = env.str('TG_BOT_TOKEN')
     project_id = env.str('PROJECT_ID')
     session_id = env.str('SESSION_ID')
+    tg_admin_chat_id = env.str('TG_ADMIN_CHAT_ID')
+
+    bot = Bot(token=tg_bot_token)
+    logger.setLevel(level=logging.INFO)
+    logger.addHandler(TelegramLogsHandler(bot, tg_admin_chat_id))
+    logger.info("Бот запущен")
 
     updater = Updater(token=tg_bot_token, use_context=True)
     dispatcher = updater.dispatcher
@@ -67,4 +63,9 @@ if __name__ == '__main__':
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(echo_handler)
 
-    updater.start_polling()
+    while True:
+        try:
+            updater.start_polling()
+        except Exception as err:
+            logger.exception(f"⚠ Ошибка бота:\n\n {err}")
+            sleep(60)

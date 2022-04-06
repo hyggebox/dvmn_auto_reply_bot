@@ -3,38 +3,31 @@ import random
 import vk_api as vk
 
 from environs import Env
-from google.cloud import dialogflow
+from time import sleep
 from vk_api.longpoll import VkLongPoll, VkEventType
 
+from df_msg_handler import get_reply_msg
 
-LANGUAGE_CODE = "ru-RU"
+
+logger = logging.getLogger("Logger")
 
 
-def detect_intent_texts(project_id, session_id, text, language_code):
-    """Returns the result of detect intent with texts as inputs.
+class VKLogsHandler(logging.Handler):
 
-    Using the same `session_id` between requests allows continuation
-    of the conversation."""
-    session_client = dialogflow.SessionsClient()
+    def __init__(self, user_id, vk_api):
+        super().__init__()
+        self.user_id = user_id
+        self.vk_api = vk_api
 
-    session = session_client.session_path(project_id, session_id)
-
-    text_input = dialogflow.TextInput(text=text, language_code=language_code)
-    query_input = dialogflow.QueryInput(text=text_input)
-
-    response = session_client.detect_intent(
-        request={"session": session, "query_input": query_input}
-    )
-
-    if response.query_result.intent.is_fallback:
-        return None
-    else:
-        return response.query_result.fulfillment_text
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.vk_api.messages.send(user_id=self.user_id,
+                                  message=log_entry,
+                                  random_id=random.randint(1,1000))
 
 
 def echo(event, vk_api, project_id, session_id):
-    bots_answer = detect_intent_texts(project_id, session_id,
-                                      event.text, LANGUAGE_CODE)
+    bots_answer = get_reply_msg(project_id, session_id, event.text)
     if bots_answer:
         vk_api.messages.send(
             user_id=event.user_id,
@@ -44,24 +37,33 @@ def echo(event, vk_api, project_id, session_id):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(levelname)s: %(name)s - %(message)s - %(asctime)s',
-        level=logging.INFO)
-
     env = Env()
     env.read_env()
 
     vk_group_token = env.str('VK_TOKEN')
     project_id = env.str('PROJECT_ID')
     session_id = env.str('SESSION_ID')
+    vk_admin_user_id = env.str('VK_ADMIN_USER_ID')
 
     vk_session = vk.VkApi(token=vk_group_token)
     vk_api = vk_session.get_api()
     longpoll = VkLongPoll(vk_session)
 
-    for event in longpoll.listen():
-        if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-            echo(event, vk_api, project_id, session_id)
+    logger.setLevel(level=logging.INFO)
+    logger.addHandler(VKLogsHandler(vk_admin_user_id, vk_api))
+    logger.info("Бот запущен")
+
+    while True:
+        try:
+            for event in longpoll.listen():
+
+                if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+                    echo(event, vk_api, project_id, session_id)
+
+        except Exception as err:
+            logger.exception(f"⚠ Ошибка бота:\n\n {err}")
+            sleep(60)
+
 
 
 
