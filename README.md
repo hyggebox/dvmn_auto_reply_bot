@@ -107,3 +107,15 @@ python bot_training.py
 python tg_bot.py
 python vk_bot.py
 ```
+
+## Пример реализации бота
+ 
+Вариант чата с ботом в ВК: 
+
+![reply_bot_vk](https://user-images.githubusercontent.com/80201470/162207324-99820ae4-c39c-4313-8854-47f5cddff17f.gif)
+
+
+
+Вариант чата с ботом в Telegram: 
+
+![reply_bot_tg](https://user-images.githubusercontent.com/80201470/162207394-b292f04c-ce15-49c0-9935-d0e56fc07bcc.gif)
