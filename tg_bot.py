@@ -32,7 +32,7 @@ def start(update: Update, context: CallbackContext):
                              text="Привет! Я бот")
 
 
-def echo(update: Update, context: CallbackContext):
+def send_reply_msg(update: Update, context: CallbackContext):
     user_msg = update.message.text
     bots_answer = get_reply_msg(project_id, session_id, user_msg)
 
@@ -58,7 +58,8 @@ if __name__ == '__main__':
     dispatcher = updater.dispatcher
 
     start_handler = CommandHandler('start', start)
-    echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
+    echo_handler = MessageHandler(Filters.text & (~Filters.command),
+                                  send_reply_msg)
 
     dispatcher.add_handler(start_handler)
     dispatcher.add_handler(echo_handler)
