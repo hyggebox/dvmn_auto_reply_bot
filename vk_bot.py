@@ -26,7 +26,7 @@ class VKLogsHandler(logging.Handler):
                                   random_id=random.randint(1,1000))
 
 
-def echo(event, vk_api, project_id, session_id):
+def get_reply(event, vk_api, project_id, session_id):
     bots_answer = get_reply_msg(project_id, session_id, event.text)
     if bots_answer:
         vk_api.messages.send(
@@ -58,20 +58,8 @@ if __name__ == '__main__':
             for event in longpoll.listen():
 
                 if event.type == VkEventType.MESSAGE_NEW and event.to_me:
-                    echo(event, vk_api, project_id, session_id)
+                    get_reply(event, vk_api, project_id, session_id)
 
         except Exception as err:
             logger.exception(f"⚠ Ошибка бота:\n\n {err}")
             sleep(60)
-
-
-
-
-
-
-
-
-
-
-
-
