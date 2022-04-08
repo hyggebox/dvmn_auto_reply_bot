@@ -5,6 +5,9 @@ from environs import Env
 from google.cloud import dialogflow
 
 
+logger = logging.getLogger("Bot Training Logger")
+
+
 def create_intent(project_id, display_name, training_phrases_parts, message_texts):
     """Create an intent of the given intent type."""
 
@@ -25,9 +28,9 @@ def create_intent(project_id, display_name, training_phrases_parts, message_text
                                messages=[message])
 
     response = intents_client.create_intent(
-        request={"parent": parent, "intent": intent}
+        request={"parent": parent, "intent": intent},
     )
-    logger.info("Intent created: {}".format(response))
+    logger.info('Intent created: "{}"'.format(response.display_name))
 
 
 def list_intent_names(project_id):
@@ -42,9 +45,8 @@ if __name__ == "__main__":
     env.read_env()
 
     logging.basicConfig(
-        format='%(levelname)s: %(name)s - %(message)s - %(asctime)s',
+        format='%(levelname)s: %(name)s - %(message)s',
         level=logging.INFO)
-    logger = logging.getLogger('Logger')
 
     project_id = env.str('PROJECT_ID')
 
