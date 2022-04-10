@@ -35,9 +35,10 @@ def start(update: Update, context: CallbackContext):
 def send_reply_msg(update: Update, context: CallbackContext):
     user_msg = update.message.text
     bots_answer = get_reply_msg(project_id, session_id, user_msg)
-    if bots_answer:
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text=bots_answer)
+    msg_text = bots_answer or 'Я не понимаю. Пожалуйста, попробуйте ' \
+                              'сформулировать запрос иначе'
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=msg_text)
 
 
 if __name__ == '__main__':
