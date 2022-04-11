@@ -18,7 +18,5 @@ def get_reply_msg(project_id, session_id, text):
         request={"session": session, "query_input": query_input}
     )
 
-    if response.query_result.intent.is_fallback:
-        return None
-    else:
-        return response.query_result.fulfillment_text
+    return response
+

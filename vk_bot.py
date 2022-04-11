@@ -27,11 +27,12 @@ class VKLogsHandler(logging.Handler):
 
 
 def send_reply_msg(event, vk_api, project_id, session_id):
-    bots_answer = get_reply_msg(project_id, session_id, event.text)
-    if bots_answer:
+    bot_response = get_reply_msg(project_id, session_id, event.text)
+
+    if not bot_response.query_result.intent.is_fallback:
         vk_api.messages.send(
             user_id=event.user_id,
-            message=bots_answer,
+            message=bot_response.query_result.fulfillment_text,
             random_id=random.randint(1,1000)
         )
 
